@@ -1,0 +1,23 @@
+from bio import *
+from cfg import *
+import os
+from python import subprocess
+
+# ../genmap map -fl -I ce11 -O ./gm_out -K 25 --csv
+
+# Generate the CSVs from an FM lib.
+# This is pretty slow, and there's probably a better way.
+def build_freq_csv(lib_path):
+	for k in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN + 1):
+		print(f"Getting {k}-mer frequencies... ({k - PRIMER_MIN_LEN + 1} / {PRIMER_MAX_LEN - PRIMER_MIN_LEN + 1})")
+		genmap_args = [
+			GENMAP_PATH, "map",
+			"-I", lib_path,
+			"-O", CSV_PATH+"/k"+str(k),
+			"-K", str(k),
+			"-fl", "--txt"
+			]
+		proc = subprocess.run(genmap_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # consider using popen for a progress bar?
+		# out, err = proc.communicate()
+
+build_freq_csv("./ce11")

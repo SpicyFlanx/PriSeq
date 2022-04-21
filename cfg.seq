@@ -1,0 +1,29 @@
+# Configs
+
+# Minimum / maximum primer lengths
+PRIMER_MIN_LEN = 18
+PRIMER_MAX_LEN = 22
+
+# Minimum / maximum transcript lengths
+TRANS_MIN_LEN = 60
+TRANS_MAX_LEN = 150
+
+# Maximum base / dinucleotide repeats
+MAX_REPEATS = 5
+
+# Minimum / maximum CG contents.
+MIN_CG = 0.4
+MAX_CG = 0.6
+
+# Minimum / maximum primer melting temps
+MIN_TM = 52
+MAX_TM = 58
+
+# Maximum difference in primer melting temps 
+MAX_DTM = 5
+
+# Genmap path
+GENMAP_PATH = "./genmap"
+
+# Path for generated k-mer frequency CSVs
+CSV_PATH = "./csv"
