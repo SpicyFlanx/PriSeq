@@ -1,5 +1,5 @@
 from bio import *
-from import *
+from cfg import *
 
 # PCR Candidate filters, per k-mer
 
@@ -22,13 +22,18 @@ def cg_filter(km):
 	return cg >= MIN_CG and cg <= MAX_CG
 
 
+# CG CLAMP
+# Return True if NO CG clamp.
+# A bit confusing, but consistent.
+# Assumes given kmer is 5' -> 3'!
+def clamp_filter(km):
+	return cg_count(str(km)[-CG_CLAMP_LEN:]) > CG_CLAMP_MAX
+
+
 # MELTING TEMP
 
 # TM (wallace rule): Tm = 2AT + 4CG
 # Return an estimate of melting temp. in celsius, according to wallace rule
-# TODO: 
-# make sure this is right
-# temp filter
 def wallace_tm(km):
 	cg = cg_content(km)
 	at = len(km) - cg
@@ -36,7 +41,7 @@ def wallace_tm(km):
 
 def tm_filter(km):
 	tm = wallace_tm(km)
-	return True if (tm >= MIN_TM) and (tm <= MAX_TM) else False
+	return (tm >= MIN_TM) and (tm <= MAX_TM)
 
 
 # REPEATS
@@ -70,3 +75,13 @@ def run_filter(km):
 	return True
 
 # these could probably go together, whatever
+
+# SELF-ANNEALING
+
+def anneal_ta(km):
+	pass
+	# TODO	
+
+
+def all_filters(km):
+	return cg_filter(km) and cg_filter(km) and tm_filter(km) and dnr_filter(km) and run_filter(km)
