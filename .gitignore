@@ -2,3 +2,5 @@ csv/**
 *.tar.gz
 ce11/**
 genmap
+fasta/**
+fm/**

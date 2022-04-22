@@ -5,14 +5,13 @@ from python import subprocess
 from python import tokenize
 from python import io
 
+# USING SEQ FMINDEX
 
-# ../genmap map -fl -I ce11 -O ./gm_out -K 25 --csv
 
-# TODO: generate index
+
+# GENMAP- DEPRECATED?
 
 # Generate the stuff from an FM lib.
-# This is pretty slow, and there's probably a better way.
-# TODO: Error param
 def build_freq_csv(lib_path):
 	for k in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN + 1):
 		print(f"Getting {k}-mer frequencies... ({k - PRIMER_MIN_LEN + 1} / {PRIMER_MAX_LEN - PRIMER_MIN_LEN + 1})")
@@ -48,4 +47,6 @@ def count_kmer(path, thres):
 def get_kmer(file, loc, k):
 	pass
 
-count_kmer("./csv/k18.txt", 200)
+# count_kmer("./csv/k18.txt", 200)
+# build_freq_csv("./fm/ce")
+

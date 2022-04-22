@@ -35,7 +35,7 @@ def clamp_filter(km):
 # TM (wallace rule): Tm = 2AT + 4CG
 # Return an estimate of melting temp. in celsius, according to wallace rule
 def wallace_tm(km):
-	cg = cg_content(km)
+	cg = cg_count(km)
 	at = len(km) - cg
 	return 4*cg + 2*at
 
@@ -63,7 +63,9 @@ dnr_repeats = [x for x in map(lambda x: x*MAX_REPEATS, dnr_repeats)]
 def dnr_filter(km):
 	low = str(km).lower()
 	for dnr in dnr_repeats:
-		return False if dnr in low
+		# return (False if dnr in low)
+		if dnr in low:
+			return False
 	return True
 
 # consecutive runs
@@ -71,7 +73,9 @@ def dnr_filter(km):
 def run_filter(km):
 	low = str(km).lower()
 	for run in bp_runs:
-		return False if run in low
+		# return (False if run in low)
+		if run in low:
+			return False
 	return True
 
 # these could probably go together, whatever
