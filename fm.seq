@@ -2,11 +2,17 @@ from bio import *
 from cfg import *
 import os
 from python import subprocess
+from python import tokenize
+from python import io
+
 
 # ../genmap map -fl -I ce11 -O ./gm_out -K 25 --csv
 
-# Generate the CSVs from an FM lib.
+# TODO: generate index
+
+# Generate the stuff from an FM lib.
 # This is pretty slow, and there's probably a better way.
+# TODO: Error param
 def build_freq_csv(lib_path):
 	for k in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN + 1):
 		print(f"Getting {k}-mer frequencies... ({k - PRIMER_MIN_LEN + 1} / {PRIMER_MAX_LEN - PRIMER_MIN_LEN + 1})")
@@ -20,4 +26,26 @@ def build_freq_csv(lib_path):
 		proc = subprocess.run(genmap_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE) # consider using popen for a progress bar?
 		# out, err = proc.communicate()
 
-build_freq_csv("./ce11")
+# build_freq_csv("./ce11")
+
+def count_kmer(path, thres):
+	loc = 0
+	freq_tups = []
+	with open(path) as f:
+		# tokens = tokenize.tokenize(f.readlines())
+		for token in f.readlines()[1].split(" "):
+			if token == "0":
+				break
+			freq = int(token)
+			if freq > thres:
+				freq_tups.append((loc, freq))
+			loc += 1
+		f.close()
+	# print(len(freq_tups))
+	return freq_tups
+
+
+def get_kmer(file, loc, k):
+	pass
+
+count_kmer("./csv/k18.txt", 200)

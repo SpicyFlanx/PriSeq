@@ -1,0 +1,26 @@
+# import os
+# from python import subprocess
+
+# wargs = ['./genmap', 'map', '-fl', '-I', 'ce11', '-O', './gm_out', '-K', '25', '--txt']
+# proc = subprocess.Popen(wargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+# stdout, stderr = proc.communicate()
+# print(f"{stdout} \n {stderr}")
+
+from bio import *
+from cfg import *
+from fm import *
+from filter import all_filters
+
+def filter_Cs_k(fasta, freq_tup, k):
+
+	filtered_kmers = []
+	with open(fasta) as f:
+		for (loc, freq) in freq_tup:
+			km = get_kmer(freq_tup[0], k)
+			if all_filters(km):
+				filtered_kmers.append((km, loc, freq))
+	print(filtered_kmers)
+
+
+def get_kmer()
