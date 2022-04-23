@@ -7,46 +7,61 @@ from cfg import *
 from fm import *
 from filter import all_filters
 
-# Get args
+
+class KmerFilter:
+	fasta_path: str
+	filtered_kmers: Dict[str, int]
+	threshold: int
+
+	def __init__(self, thres, fasta_path=""):
+		self.filtered_kmers = Dict[str, int]()
+		# self.fasta_path = fasta_path
+		self.threshold = thres # TODO: figure out how this is calculated
 
 
-fm_idx = FMIndex(argv[1])
-fa = FASTA(argv[1], fai=False)
-filtered_kmers = []
+	# Helper method for get_candidates
+	def get_filtered_kmers(self, sequence, fm_idx, k=18):
 
-for record in fa:
-	for km in record.seq.kmers(k=20, step=1):
-		kms = seq(str(km))
-		freq = fm_idx.count(kms)
-		if freq > 500 and all_filters(kms):
-			filtered_kmers.append((kms, freq))
+		for km in sequence.kmers(k=20, step=1): 
+			# WHAT THJE FUCK!!!!
+			# EXPECTED STATIC EXPRESSION? GO FUCK YOURSELF
+			# GUESS WE JUST GOTTA MAKE ONE FOR EACH K GOD DAMN IT
 
-print(filtered_kmers)
+			# ... maybe a lambda and a filter? fuck idk
 
+			km_str = str(km)
+			km_seq = seq(km_str)
 
+			# Don't add duplicates
+			if km_str in self.filtered_kmers:
+				pass
+				# TODO: Bloom? but this shouldn't be too big, since it's filtered
 
+			freq = fm_idx.count(km_seq)
+			if freq > self.threshold and all_filters(km_seq):
+				self.filtered_kmers[km_str] = freq
+				# TODO: get all_filters to instead return corresponding bits?
+				# Then could maybe flag those that fail on eg. repeats,
+				# avoid doing superstings of those yknow
 
+	# Get kmers passing Cs constraints in given FASTA
+	# They'll be stored in filtered_kmers
+	def get_candidates(self, fasta, fm_idx):
+		# Have to pass as params since we can ONLY HAVE PRIMITIVE MEMBERS AAARGH
 
+		for record in fasta:
+			print(f"Record {record.name}")
+			for k in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN):
+				print(f"Filtering {k}-mers...")
+				self.get_filtered_kmers(record.seq, fm_idx, k=k)
 
-# def filter_Cs_k(fasta, freq_tup, k):
+fasta_path = argv[1]
+fasta = FASTA(fasta_path, fai=False)
 
-# 	filtered_kmers = []
-# 	with open(fasta) as f:
-# 		for (loc, freq) in freq_tup:
-# 			km = get_kmer(freq_tup[0], k)
-# 			if all_filters(km):
-# 				filtered_kmers.append((km, loc, freq))
-# 	print(filtered_kmers)
+print("Generating FM index...")
+fm_idx = FMIndex(fasta_path)
+print("Done!")
 
-
-# def get_kmer()
-
-
-# import os
-# from python import subprocess
-
-# wargs = ['./genmap', 'map', '-fl', '-I', 'ce11', '-O', './gm_out', '-K', '25', '--txt']
-# proc = subprocess.Popen(wargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-# stdout, stderr = proc.communicate()
-# print(f"{stdout} \n {stderr}")
+kms = KmerFilter(500)
+kms.get_candidates(fasta, fm_idx)
+print(kms.filtered_kmers)
