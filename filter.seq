@@ -1,15 +1,11 @@
 from bio import *
 from cfg import *
 
-# PCR Candidate filters, per k-mer
+# PCR Candidate filters
 
-# Melting temp
-# CG content
-# di-nucleotide repeats > 4 dns
-# consecutive runs > 4bp
+# Cs - Per-Kmer filters
 
 # CG CONTENT
-# note: kmer method gives uppercase, but sequences may be lowercase!
 def cg_count(km):
 	count = 0
 	s = str(km).lower()
@@ -82,10 +78,12 @@ def run_filter(km):
 # ANNEALING
 
 # Check for consecutive nt bonds between oligomers
+# Both -/- and -/+
 def anneal_connected(s1, s2, k: Static[int]):
 	# check bonding run of at least len k exists in 
 	# complement or reverse complement of s2
 	for seg in s1.kmers(k=k+1, step=1):
+		# Revcomp checks -/+, complement checks -/-
 		if revcomp(seg) in s2 or reversed(revcomp(seg)) in s2:
 			return False
 	return True
@@ -100,40 +98,38 @@ def check_bond(b1, b2):
 # Helper for anneal_disconnected
 def count_bonds(s1, s2):
 	count = 0
-	for (b1, b2) in zip(s1, s2):
+	for (b1, b2) in zip(str(s1), str(s2)):
 		if check_bond(b1, b2):
 			count += 1
 	return count
 
 # Check for bond participation between oligomers above max
+# Both -/- and -/+
 def anneal_disconnected(s1, s2):
 	st1 = str(s1)
 	st2 = str(s2)
 	overlap_slices = []
-	
-	# get the before overlap slices
-	for n in range( int(len(st2)/2), 1 ):
-		overlap_slices.append(st2[n:])
-	
-	overlap_slices.append(st2)
 
-	# Get the after overlap slices
-	for n in range(len(st2), int(len(st2)/2)):
+	# Get all overlaps such that at least 50% coverage possible
+	for n in range(int(len(st2)/2), len(st2)):
 		overlap_slices.append(st2[:n])
-	print(overlap_slices)
+	overlap_slices.append(st2)
+	for n in reversed(range(int(len(st2)/2), 0, -1)):
+		overlap_slices.append(st2[n:])
 
+	# If exists an alignment s.t. more than MAX_ANNEAL_BOND (i.e. half)
+	# of shorter oligomer is involved in bonding, return false
+	st1r = reversed(s1)
 	for s in overlap_slices:
-		if (count_bonds(st1, s)) / min(len(st1), len(st2)) > MAX_ANNEAL_BOND:
+		bonds = max(count_bonds(s, st1), count_bonds(s, st1r))
+		if bonds / min(len(st1), len(st2)) >= MAX_ANNEAL_BOND:
 			return False
 	return True
 
 # Self-anneal filter
 def sanneal_filter(km):
-	return anneal_connected(km, km, MAX_CONS_SANNEAL) and anneal_disconnected(km, km)
-
-# Cross-anneal filter
-def xanneal_filter(km1, km2):
-	return anneal_connected(km1, km2, MAX_CONS_XANNEAL) and anneal_disconnected(km1, km2)
+	return (anneal_connected(km, km, MAX_CONS_SANNEAL) and 
+			anneal_disconnected(km, km))
 
 # All Cs (per-kmer) filters
 def all_filters(km):
@@ -145,11 +141,10 @@ def all_filters(km):
 			sanneal_filter(km))
 
 
-# print (anneal_disconnected(seq('ACGTACGTT'), seq('ACCGTACGT')))
-
+# Cp - Per primer pair filters
 
 def delta_tm(km1, km2):
-	return abs(wallace_tm(km1) - wallace_tm(km2)) < MAX_DTM:
+	return abs(wallace_tm(km1) - wallace_tm(km2)) < MAX_DTM
 
 def at_tail():
 	pass
@@ -159,6 +154,7 @@ def CG_clamp():
 	pass
 	# TODO? in the other one guess I did it wrong
 
-def cross_anneal():
-	pass
-	# TODO
+# Cross-anneal filter
+def xanneal_filter(km1, km2):
+	return (anneal_connected(km1, km2, MAX_CONS_XANNEAL) and 
+			anneal_disconnected(km1, km2))

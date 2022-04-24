@@ -1,8 +1,8 @@
 # Configs
 
 # Minimum / maximum primer lengths
-PRIMER_MIN_LEN = 18
-PRIMER_MAX_LEN = 22
+PRIMER_MIN_LEN: Static[int] = 18
+PRIMER_MAX_LEN: Static[int] = 22
 
 # Minimum / maximum transcript lengths
 TRANS_MIN_LEN = 60
