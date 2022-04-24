@@ -78,14 +78,87 @@ def run_filter(km):
 			return False
 	return True
 
-# these could probably go together, whatever
 
-# SELF-ANNEALING
+# ANNEALING
 
-def anneal_ta(km):
-	pass
-	# TODO	
+# Check for consecutive nt bonds between oligomers
+def anneal_connected(s1, s2, k: Static[int]):
+	# check bonding run of at least len k exists in 
+	# complement or reverse complement of s2
+	for seg in s1.kmers(k=k+1, step=1):
+		if revcomp(seg) in s2 or reversed(revcomp(seg)) in s2:
+			return False
+	return True
 
+# Helper for count_bonds
+def check_bond(b1, b2):
+	return (b1 == 'A' and b2 == 'T' or
+			b1 == 'T' and b2 == 'A' or
+			b1 == 'C' and b2 == 'G' or
+			b1 == 'G' and b2 == 'C')
+	
+# Helper for anneal_disconnected
+def count_bonds(s1, s2):
+	count = 0
+	for (b1, b2) in zip(s1, s2):
+		if check_bond(b1, b2):
+			count += 1
+	return count
 
+# Check for bond participation between oligomers above max
+def anneal_disconnected(s1, s2):
+	st1 = str(s1)
+	st2 = str(s2)
+	overlap_slices = []
+	
+	# get the before overlap slices
+	for n in range( int(len(st2)/2), 1 ):
+		overlap_slices.append(st2[n:])
+	
+	overlap_slices.append(st2)
+
+	# Get the after overlap slices
+	for n in range(len(st2), int(len(st2)/2)):
+		overlap_slices.append(st2[:n])
+	print(overlap_slices)
+
+	for s in overlap_slices:
+		if (count_bonds(st1, s)) / min(len(st1), len(st2)) > MAX_ANNEAL_BOND:
+			return False
+	return True
+
+# Self-anneal filter
+def sanneal_filter(km):
+	return anneal_connected(km, km, MAX_CONS_SANNEAL) and anneal_disconnected(km, km)
+
+# Cross-anneal filter
+def xanneal_filter(km1, km2):
+	return anneal_connected(km1, km2, MAX_CONS_XANNEAL) and anneal_disconnected(km1, km2)
+
+# All Cs (per-kmer) filters
 def all_filters(km):
-	return cg_filter(km) and cg_filter(km) and tm_filter(km) and dnr_filter(km) and run_filter(km)
+	return (cg_filter(km) and 
+			cg_filter(km) and 
+			tm_filter(km) and 
+			dnr_filter(km) and 
+			run_filter(km) and
+			sanneal_filter(km))
+
+
+# print (anneal_disconnected(seq('ACGTACGTT'), seq('ACCGTACGT')))
+
+
+def delta_tm(km1, km2):
+	return abs(wallace_tm(km1) - wallace_tm(km2)) < MAX_DTM:
+
+def at_tail():
+	pass
+	# TODO
+
+def CG_clamp():
+	pass
+	# TODO? in the other one guess I did it wrong
+
+def cross_anneal():
+	pass
+	# TODO
