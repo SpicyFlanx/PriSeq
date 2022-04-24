@@ -10,12 +10,19 @@ TRANS_MAX_LEN = 150
 
 # Minimum frequency threshold
 
-# Maximum base / dinucleotide repeats
+# Maximum + 1 base / dinucleotide repeats
 MAX_REPEATS = 5
 
 # Minimum / maximum CG contents.
 MIN_CG = 0.4
 MAX_CG = 0.6
+
+# Maximum consecutive bonding pairs allowed in self/cross-annealing checks
+MAX_CONS_SANNEAL: Static[int] = 3
+MAX_CONS_XANNEAL: Static[int] = 4
+
+# Maximum bond participation in self/cross-annealing
+MAX_ANNEAL_BOND = 0.5
 
 # CG clamp: Maximum CGs allowed in last LEN bases (3' end).
 # to avoid tew stronge of binding

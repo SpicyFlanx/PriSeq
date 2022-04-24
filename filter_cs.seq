@@ -1,0 +1,143 @@
+from bio import *
+from cfg import *
+
+# PCR Candidate filters, per k-mer
+
+# Melting temp
+# CG content
+# di-nucleotide repeats > 4 dns
+# consecutive runs > 4bp
+
+# CG CONTENT
+# note: kmer method gives uppercase, but sequences may be lowercase!
+def cg_count(km):
+	count = 0
+	s = str(km).lower()
+	count += s.count('c')
+	count += s.count('g')
+	return count
+
+def cg_filter(km):
+	cg = cg_count(km) / len(km)
+	return cg >= MIN_CG and cg <= MAX_CG
+
+
+# CG CLAMP
+# Return True if NO CG clamp.
+# A bit confusing, but consistent.
+# Assumes given kmer is 5' -> 3'!
+def clamp_filter(km):
+	return cg_count(str(km)[-CG_CLAMP_LEN:]) > CG_CLAMP_MAX
+
+
+# MELTING TEMP
+
+# TM (wallace rule): Tm = 2AT + 4CG
+# Return an estimate of melting temp. in celsius, according to wallace rule
+def wallace_tm(km):
+	cg = cg_count(km)
+	at = len(km) - cg
+	return 4*cg + 2*at
+
+def tm_filter(km):
+	tm = wallace_tm(km)
+	return (tm >= MIN_TM) and (tm <= MAX_TM)
+
+
+# REPEATS
+
+bp_runs = ["a",	"c", "g", "t"]
+dnr_repeats = [
+	"aa", "ac", "ag", "at",
+	"ca", "cc", "cg", "ct",
+	"ga", "gc", "gg", "gt",
+	"ta", "tc", "tg", "tt"
+]
+
+bp_runs = [x for x in map(lambda x: x*MAX_REPEATS, bp_runs)]
+dnr_repeats = [x for x in map(lambda x: x*MAX_REPEATS, dnr_repeats)]
+# map and lambda to make some repeated char sequences? wow
+
+# Dinucleotide repeats
+# return false if > MAX_REPEATS of some di-nucleotide consecutively
+def dr_filter(km):
+	low = str(km).lower()
+	for dnr in dnr_repeats:
+		# return (False if dnr in low)
+		if dnr in low:
+			return False
+	return True
+
+# consecutive runs
+# return False if a run > 5 bp of one base present in given kmer
+def run_filter(km):
+	low = str(km).lower()
+	for run in bp_runs:
+		# return (False if run in low)
+		if run in low:
+			return False
+	return True
+
+# these could probably go together, whatever
+
+# SELF-ANNEALING
+
+
+
+# Check for consecutive nt bonds between oligomers
+# Mode 0 = self anneal, mode 1 = cross-anneal
+def anneal_connected(s1, s2, k: Static[int]):
+
+	# Check if revcomp of any len n slice from s1 exists
+	# (bonding run of at least len n exists)
+	for seg in s1.kmers(k=k+1, step=1):
+		if revcomp(seg) in s2:
+			return False
+	return True
+
+# Helper for count_bonds
+def check_bond(b1, b2):
+	return (b1 == 'A' and b2 == 'T' or
+			b1 == 'T' and b2 == 'A' or
+			b1 == 'C' and b2 == 'G' or
+			b1 == 'G' and b2 == 'C')
+	
+# Helper for anneal_disconnected
+def count_bonds(s1, s2):
+	count = 0
+	for (b1, b2) in zip(s1, s2):
+		if check_bond(b1, b2):
+			count += 1
+	return count
+
+# Check for bond participation between oligomers above max
+def anneal_disconnected(s1, s2):
+	s1 = str(s1)
+	s2 = str(s2)
+	overlap_slices = []
+	
+	# get the before overlap slices
+	for n in range( int(len(s2)/2), 1 ):
+		overlap_slices.append(s2[n:])
+	
+	overlap_slices.append(s2)
+
+	# Get the after overlap slices
+	for n in range(len(s2), int(len(s2)/2)):
+		overlap_slices.append(s2[:n])
+
+	for s in overlap_slices:
+		if (count_bonds(s1, s)) / min(len(s1), len(s2)) > MAX_ANNEAL_BOND:
+			return False
+	return True
+
+def all_filters(km):
+	return (cg_filter(km) and 
+			cg_filter(km) and 
+			tm_filter(km) and 
+			dr_filter(km) and 
+			run_filter(km))
+
+
+# anneal_disconnected(seq('ACGTACGT'), seq('ACGTACGT'))
+# print(anneal_connected(s1, s2, MAX_CONS_SANNEAL))
