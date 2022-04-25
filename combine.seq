@@ -1,0 +1,69 @@
+
+
+class BitVector	# Should be defined in the paper. I think it's a transform of the DNA? 
+				# That's not just for efficiency sadly, as they use a bunch of bit hacks for the processing. Might have to make them all uint64's
+	pass
+
+class CombinePattern
+	pass
+
+# TODO: TEST
+def combine(TReferences, TKmerIDs, PrimerPairList, kmer_counts = None):
+	counter = 0
+	for i in range(len(TReferences)):
+		
+		# sdsl stuff - bit vector
+		reference = BitVector()	# Create a bit vector class instance
+		# Ensure the class for this includes rank and select support as defined in the paper / sdsl
+		
+		
+		# i === seqNo_cx	# Notes for comparing to the C++ code
+		# k === r_fwd
+		# j === r_rev
+		
+		for k in range(reference.rank(len(reference)-1)):
+			index_forward = reference.select(k)
+			kmerID_fwd = kmerIDs[i][k - 1]
+			
+			w_begin = min(len(reference), index_forward + KAPPA_MIN + TRANSCRIPT_MIN_LEN)
+			
+			w_end = min(len(reference), index_forward + KAPPA_MAX + TRANSCRIPT_MIN_LEN + 1)
+			
+			for j in range(reference.rank(w_begin), reference.rank(w_end)):
+				cp = CombinePattern()	# Figure out what CombinePattern is (Datastructure-wise)
+				mask_fwd = 1 << 63
+				kmerID_rev = kmerIDs[i][j-1]
+				
+				# filter cross annealing method - from filter.seq 
+				
+				xanneal_filter(kmerID_fwd, kmerID_rev)
+				
+				while ((((mask_fwd - 1) << 1) & kmerID_fwd) >> 54):
+					# check forward primer not ending with TTT, ATT
+					
+					# Either make sure & is well defined, or create a mask function... Is x & mask masking? Probably
+					if (mask_fwd & kmerID_fwd) and CG_clamp(kmerID_fwd, mask_fwd) and at_tail(kmerID_fwd, mask_fwd):
+						mask_rev = 1 << 63
+						
+						while (((mask_rev - 1) << 1) & kmerID_rev) >> 54:
+							counter += 1
+							
+							if mask_rev & kmerID_rev and CG_clamp(kmerID_rev) and at_tail(kmerID_rev):
+								# Here we wrote it as a mask function. Probably mask should be a method of BitVector
+								if abs(wallace_tm(mask(kmerID_fwd, mask_fwd)) - wallace_tm(mask(kmerID_rev, mask_rev))) <= PRIMER_DTM
+									
+									# store combination limit
+									cp.set(mask_fwd, mask_rev)
+									kmer_counts[???] += 1
+									
+							mask_rev >>=1
+						
+					mask_fwd >>= 1
+				
+				if cp.is_set():
+					PrimerPairList.push(PrimerPair(i, j, k, cp)	# Create a PrimerPair class
+				
+			
+			
+			
+	
