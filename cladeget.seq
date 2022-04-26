@@ -1,0 +1,19 @@
+from bio import *
+from sys import argv
+
+fasta = FASTA(argv[1], fai=False)
+n = int(argv[2])
+target_clade = str(argv[3])
+
+f_out = open(f"{target_clade}.fa", 'w')
+
+count = 0
+for record in fasta:
+	if count == n:
+		break
+	if target_clade in record.header.lower():
+		f_out.write(">"+record.header+"\n"+str(record.seq)+"\n")
+		count += 1
+f_out.close()
+
+
