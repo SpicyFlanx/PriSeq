@@ -7,11 +7,12 @@ from cfg import *
 
 # CG CONTENT
 def cg_count(km):
-	count = 0
-	s = str(km).lower()
-	count += s.count('c')
-	count += s.count('g')
-	return count
+	# count = 0
+	# count = km.bases()[1] + km.bases()[2]
+	# s = str(km).lower()
+	# count += s.count('c')
+	# count += s.count('g')
+	return sum(km.bases()[1:3]) # Maybe faster idk
 
 def cg_filter(km):
 	cg = cg_count(km) / len(km)
@@ -22,8 +23,8 @@ def cg_filter(km):
 # Return True if NO CG clamp.
 # A bit confusing, but consistent.
 # Assumes given kmer is 5' -> 3'!
-def clamp_filter(km):
-	return cg_count(str(km)[-CG_CLAMP_LEN:]) > CG_CLAMP_MAX
+# def clamp_filter(km):
+# 	return cg_count(str(km)[-CG_CLAMP_LEN:]) > CG_CLAMP_MAX
 
 
 # MELTING TEMP
@@ -82,9 +83,10 @@ def run_filter(km):
 def anneal_connected(s1, s2, k: Static[int]):
 	# check bonding run of at least len k exists in 
 	# complement or reverse complement of s2
-	for seg in s1.kmers(k=k+1, step=1):
+	for km in s1.kmers(k=k+1, step=1):
 		# Revcomp checks -/+, complement checks -/-
-		if revcomp(seg) in s2 or reversed(revcomp(seg)) in s2:
+		s = seq(str(km))
+		if revcomp(s) in s2 or reversed(revcomp(s)) in s2:
 			return False
 	return True
 
@@ -146,13 +148,20 @@ def all_filters(km):
 def delta_tm(km1, km2):
 	return abs(wallace_tm(km1) - wallace_tm(km2)) < MAX_DTM
 
-def at_tail():
-	pass
-	# TODO
+# CG clamps: presence of C|Gs in the 3' end of the primer (last 5 bases). 
+# Want one or two, but not more than 3 cause it'll chooch too tight.
+def cg_clamp_filter(km):
+	tail_cg = cg_count(km[-CG_CLAMP_LEN:])
+	if tail_cg > 0 and tail_cg <= CG_CLAMP_MAX:
+		return True
+	return False
 
-def CG_clamp():
-	pass
-	# TODO? in the other one guess I did it wrong
+# A|T tails: last 3 bases are exclusively As and Ts
+# Return False if at tail exists (in given direction!)
+def at_tail_filter(km):
+	if cg_count(km[-3:]) == 0:
+		return False
+	return True
 
 # Cross-anneal filter
 def xanneal_filter(km1, km2):
