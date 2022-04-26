@@ -167,3 +167,11 @@ def at_tail_filter(km):
 def xanneal_filter(km1, km2):
 	return (anneal_connected(km1, km2, MAX_CONS_XANNEAL) and 
 			anneal_disconnected(km1, km2))
+
+def pair_filters(km1, km2):
+	return (cg_clamp_filter(km1) and
+			cg_clamp_filter(km2) and
+			at_tail_filter(km1) and
+			at_tail_filter(km2) and
+			xanneal_filter(km1, km2) and
+			delta_tm(km1, km2))

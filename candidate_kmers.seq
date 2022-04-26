@@ -1,0 +1,49 @@
+from bio import *
+from bio.fmindex import *
+
+from sys import argv
+
+from cfg import *
+from fm import *
+from filter import all_filters
+
+def get_candidate_kmers(fm_idx, threshold):
+
+	fwd_mers = {}
+	bwd_mers = {}
+
+	contig_count = 0
+	for contig in fm_idx.contigs():
+		contig_count += 1
+		print(f"Reading record {contig.name}... ({contig_count} / {len(fm_idx.contigs)+1})")
+
+		print("Sense + strand... ")
+		for n in range(0, len(contig) - PRIMER_MAX_LEN):
+
+			for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
+				seek = fm_idx.sequence(n, n+oligo_len, name=contig.name) 
+				count = fm_idx.count(seek)
+				if count < threshold:
+					break
+					# Ignore kmers w/ freq below threshold
+					# And if it's below the threshold, so will any superstring of it
+				if str(seek) in fwd_mers:
+					continue
+					# Also don't add duplicates, we don't need em
+				if all_filters(seek):
+					fwd_mers[str(seek)] = count
+
+		print("Sense - strand... ")
+		for n in range(len(contig), PRIMER_MAX_LEN, -1):
+
+			for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
+				seek = revcomp(fm_idx.sequence(n-oligo_len, n, name=contig.name))
+				count = fm_idx.count(seek)
+				if count < threshold:
+					break
+				if str(seek) in bwd_mers:
+					continue
+				if all_filters(seek):
+					bwd_mers[str(seek)] = count
+
+	return (fwd_mers, bwd_mers)

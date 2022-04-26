@@ -1,54 +1,46 @@
+from bio import * 
+from bio.fmindex import *
 
+from cfg import *
+from filter import *
 
-
+def get_primer_pairs(fm_idx, fwd_mers, bwd_mers):
 	
-Super inefficient way...
+	# region : [(sequence, locus), ...]
+	fwd_mers_by_contig = Dict[str, List[Tuple[str, int]]]()
+	bwd_mers_by_contig = Dict[str, List[Tuple[str, int]]]()
+	# region : [((s+, l),(s-, l)), ...]
+	primer_pairs_by_contig = Dict[str, List[Tuple[Tuple[str, int], Tuple[str, int]]]]()
 
-"""
-form pairs of two kmers, if they satisy Cp
-combinatorially loop over all possible pairs of kmers
-	(You should only check pairs in a certain 'search window of combinable reverse primers' "accessed by adding amplicon length range")
+	# Seperate the candidate kmers by region, 
+	# I guess we really didn't need to fetch + and - into seperate dicts
+	for s in fwd_mers:
+		for occ in fm_idx.locate(seq(s)):
+			if not occ[1] in fwd_mers_by_contig:
+				fwd_mers_by_contig[occ[1]] = []
+			fwd_mers_by_contig[occ[1]].append((s, occ[2]))
 
-"""
+			# 0: rid
+			# 1: record name
+			# 2: 0-based pos
+			# 3: reversed?
 
-# would be TKMerID
-class KmerStartingAtIndex:
-	def init(kmer, lengths):
-		self.kmer = kmer
-		self.lengths = lengths
-
-
-def combine(filtered_kmers):
-	primer_pair_list = []
-
-	# Create condensed version of filtered_kmers
-	for kmer in filtered_kmers:
-		# I need the index in the sequence of every kmer.
-		# Then every one that starts at the same place must be combined into one object
-		# Each such object must be put in a list, in (original sequence) index order.
-		
-	# Loop through each
-	for kmer_set in condensed_kmers:
-		# get the index of the kmer_set from the kmer_set object
-		# create a window of viable indices
-		w_begin = current_index + KAPPA_MIN + TRANSCRIPT_MIN_LEN
-		w_end = current_index + KAPPA_MAX + TRANSCRIPT_MIN_LEN + 1
-		# Make a function that converts from the original sequence index to the condensed_kmers index, call it idx_converter
-		w_idx = idx_converter(w_begin)
-		end_idx = idx_converter(w_end)
-		while w_idx < end_idx:
-			If xanneal_filter(kmer_set, condensed_kmers[w_idx]):
-				for len1 in kmer_set.lengths:
-					if cp_check(kmer_set.truncate_to(len1)):
-						for len2 in condensed_kmers[w_idx]:
-							If cp_check(condensed_kmers[w_idx].truncate_to(len2)):
-								primer_pair_list.append(kmer_set.kmer, len1, condensed_kmers[w_idx], len2)
-					
-		
+	for s in bwd_mers:
+		for occ in fm_idx.locate(seq(s), both_strands=True):
+			if occ[3]: # Only ones on reverse
+				if not occ[1] in bwd_mers_by_contig:
+					bwd_mers_by_contig[occ[1]] = []
+				bwd_mers_by_contig[occ[1]].append((s, occ[2]))
 
 
+	for region in fwd_mers_by_contig:
+		primer_pairs_by_contig[region] = []
 
-			
-			
-			
-	
+		for sl1 in fwd_mers_by_contig[region]:
+			# check for a good pair w/ each bwd candidate
+			for sl2 in bwd_mers_by_contig[region]:
+				if pair_filters(seq(sl1[0]), seq(sl2[0])): # Run pair filters on sequences from the pair TODO: some of these filters get run additional times
+					primer_pairs_by_contig[region].append((sl1, sl2)) # add passing ones to the list
+
+	return primer_pairs_by_contig
+

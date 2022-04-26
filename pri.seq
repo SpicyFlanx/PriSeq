@@ -4,61 +4,9 @@ from bio.fmindex import *
 from sys import argv
 
 from cfg import *
-from fm import *
+from candidate_kmers import *
 from filter import all_filters
-
-
-class KmerFilter:
-	fasta_path: str
-	filtered_kmers: Dict[str, int]
-	threshold: int
-
-	def __init__(self, thres, fasta_path=""):
-		self.filtered_kmers = Dict[str, int]()
-		# self.fasta_path = fasta_path
-		self.threshold = thres # TODO: figure out how this is calculated
-
-
-	# Helper method for get_candidates
-	def get_filtered_kmers(self, sequence, fm_idx, k=18):
-
-		for km in sequence.kmers(k=20, step=1): 
-			# WHAT THJE FUCK!!!!
-			# EXPECTED STATIC EXPRESSION? GO FUCK YOURSELF
-			# GUESS WE JUST GOTTA MAKE ONE FOR EACH K GOD DAMN IT
-
-			# ... maybe a lambda and a filter? fuck idk
-
-			km_str = str(km)
-			km_seq = seq(km_str)
-
-			# Don't add duplicates
-			if km_str in self.filtered_kmers:
-				pass
-				# TODO: Bloom? but this shouldn't be too big, since it's filtered
-
-			freq = fm_idx.count(km_seq)
-			if freq > self.threshold and all_filters(km_seq):
-				self.filtered_kmers[km_str] = freq
-				# TODO: get all_filters to instead return corresponding bits?
-				# Then could maybe flag those that fail on eg. repeats,
-				# avoid doing superstings of those yknow
-
-	# Get kmers passing Cs constraints in given FASTA
-	# They'll be stored in filtered_kmers
-	def get_candidates(self, fasta, fm_idx):
-		# Have to pass as params since we can ONLY HAVE PRIMITIVE MEMBERS AAARGH
-
-		for record in fasta:
-			print(f"Record {record.name}")
-			for k in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN):
-				print(f"Filtering {k}-mers...")
-				self.get_filtered_kmers(record.seq, fm_idx, k=k)
-
-# kms = KmerFilter(1)
-# kms.get_candidates(fasta, fm_idx)
-# print(kms.filtered_kmers)
-
+from combine import *
 
 # Load the FASTA and build FM index
 fasta_path, threshold = (argv[1], int(argv[2]))
@@ -68,43 +16,10 @@ print("Generating FM index...")
 fm_idx = FMDIndex(fasta_path)
 print("Done!")
 
-fwd_mers = {}
-bwd_mers = {}
+fwd_mers, bwd_mers = get_candidate_kmers(fm_idx, threshold)
+primer_pairs = get_primer_pairs(fm_idx, fwd_mers, bwd_mers)
 
-contig_count = 0
-for contig in fm_idx.contigs():
-	contig_count += 1
-	print(f"Reading record {contig.name}... ({contig_count} / {len(fm_idx.contigs)+1})")
-
-	print("Sense + strand... ")
-	for n in range(0, len(contig) - PRIMER_MAX_LEN):
-
-		for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
-			seek = fm_idx.sequence(n, n+oligo_len, name=contig.name) 
-			count = fm_idx.count(seek)
-			if count < threshold:
-				break
-				# Ignore kmers w/ freq below threshold
-				# And if it's below the threshold, so will any superstring of it
-			if str(seek) in fwd_mers:
-				continue
-				# Also don't add duplicates, we don't need em
-			if all_filters(seek):
-				fwd_mers[str(seek)] = count
-
-	print("Sense - strand... ")
-	for n in range(len(contig), PRIMER_MAX_LEN, -1):
-
-		for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
-			seek = revcomp(fm_idx.sequence(n-oligo_len, n, name=contig.name))
-			count = fm_idx.count(seek)
-			if count < threshold:
-				break
-			if str(seek) in bwd_mers:
-				continue
-			if all_filters(seek):
-				bwd_mers[str(seek)] = count
-
-# Debug
-print(fwd_mers)
-print(bwd_mers)
+for region in primer_pairs:
+	print(f"Record {region}:")
+	for tup in primer_pairs[region]:
+		print(f"+ sense: {tup[0][0]} {tup[0][1]} | - sense: {tup[1][0]} {tup[1][1]}")
