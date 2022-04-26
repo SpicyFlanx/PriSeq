@@ -1,68 +1,53 @@
 
 
-class BitVector	# Should be defined in the paper. I think it's a transform of the DNA? 
-				# That's not just for efficiency sadly, as they use a bunch of bit hacks for the processing. Might have to make them all uint64's
-	pass
 
-class CombinePattern
-	pass
+	
+Super inefficient way...
 
-# TODO: TEST
-def combine(TReferences, TKmerIDs, PrimerPairList, kmer_counts = None):
-	counter = 0
-	for i in range(len(TReferences)):
+"""
+form pairs of two kmers, if they satisy Cp
+combinatorially loop over all possible pairs of kmers
+	(You should only check pairs in a certain 'search window of combinable reverse primers' "accessed by adding amplicon length range")
+
+"""
+
+# would be TKMerID
+class KmerStartingAtIndex:
+	def init(kmer, lengths):
+		self.kmer = kmer
+		self.lengths = lengths
+
+
+def combine(filtered_kmers):
+	primer_pair_list = []
+
+	# Create condensed version of filtered_kmers
+	for kmer in filtered_kmers:
+		# I need the index in the sequence of every kmer.
+		# Then every one that starts at the same place must be combined into one object
+		# Each such object must be put in a list, in (original sequence) index order.
 		
-		# sdsl stuff - bit vector
-		reference = BitVector()	# Create a bit vector class instance
-		# Ensure the class for this includes rank and select support as defined in the paper / sdsl
-		
-		
-		# i === seqNo_cx	# Notes for comparing to the C++ code
-		# k === r_fwd
-		# j === r_rev
-		
-		for k in range(reference.rank(len(reference)-1)):
-			index_forward = reference.select(k)
-			kmerID_fwd = kmerIDs[i][k - 1]
-			
-			w_begin = min(len(reference), index_forward + KAPPA_MIN + TRANSCRIPT_MIN_LEN)
-			
-			w_end = min(len(reference), index_forward + KAPPA_MAX + TRANSCRIPT_MIN_LEN + 1)
-			
-			for j in range(reference.rank(w_begin), reference.rank(w_end)):
-				cp = CombinePattern()	# Figure out what CombinePattern is (Datastructure-wise)
-				mask_fwd = 1 << 63
-				kmerID_rev = kmerIDs[i][j-1]
-				
-				# filter cross annealing method - from filter.seq 
-				
-				xanneal_filter(kmerID_fwd, kmerID_rev)
-				
-				while ((((mask_fwd - 1) << 1) & kmerID_fwd) >> 54):
-					# check forward primer not ending with TTT, ATT
+	# Loop through each
+	for kmer_set in condensed_kmers:
+		# get the index of the kmer_set from the kmer_set object
+		# create a window of viable indices
+		w_begin = current_index + KAPPA_MIN + TRANSCRIPT_MIN_LEN
+		w_end = current_index + KAPPA_MAX + TRANSCRIPT_MIN_LEN + 1
+		# Make a function that converts from the original sequence index to the condensed_kmers index, call it idx_converter
+		w_idx = idx_converter(w_begin)
+		end_idx = idx_converter(w_end)
+		while w_idx < end_idx:
+			If xanneal_filter(kmer_set, condensed_kmers[w_idx]):
+				for len1 in kmer_set.lengths:
+					if cp_check(kmer_set.truncate_to(len1)):
+						for len2 in condensed_kmers[w_idx]:
+							If cp_check(condensed_kmers[w_idx].truncate_to(len2)):
+								primer_pair_list.append(kmer_set.kmer, len1, condensed_kmers[w_idx], len2)
 					
-					# Either make sure & is well defined, or create a mask function... Is x & mask masking? Probably
-					if (mask_fwd & kmerID_fwd) and CG_clamp(kmerID_fwd, mask_fwd) and at_tail(kmerID_fwd, mask_fwd):
-						mask_rev = 1 << 63
-						
-						while (((mask_rev - 1) << 1) & kmerID_rev) >> 54:
-							counter += 1
-							
-							if mask_rev & kmerID_rev and CG_clamp(kmerID_rev) and at_tail(kmerID_rev):
-								# Here we wrote it as a mask function. Probably mask should be a method of BitVector
-								if abs(wallace_tm(mask(kmerID_fwd, mask_fwd)) - wallace_tm(mask(kmerID_rev, mask_rev))) <= PRIMER_DTM
-									
-									# store combination limit
-									cp.set(mask_fwd, mask_rev)
-									kmer_counts[???] += 1
-									
-							mask_rev >>=1
-						
-					mask_fwd >>= 1
-				
-				if cp.is_set():
-					PrimerPairList.push(PrimerPair(i, j, k, cp)	# Create a PrimerPair class
-				
+		
+
+
+
 			
 			
 			
