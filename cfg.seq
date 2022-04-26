@@ -5,8 +5,8 @@ PRIMER_MIN_LEN: Static[int] = 18
 PRIMER_MAX_LEN: Static[int] = 22
 
 # Minimum / maximum transcript lengths
-TRANS_MIN_LEN = 60
-TRANS_MAX_LEN = 150
+TRANS_MIN_LEN: Static[int] = 30
+TRANS_MAX_LEN: Static[int] = 800
 
 # Minimum frequency threshold
 

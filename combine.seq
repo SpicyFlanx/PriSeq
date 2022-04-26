@@ -39,8 +39,9 @@ def get_primer_pairs(fm_idx, fwd_mers, bwd_mers):
 		for sl1 in fwd_mers_by_contig[region]:
 			# check for a good pair w/ each bwd candidate
 			for sl2 in bwd_mers_by_contig[region]:
-				if pair_filters(seq(sl1[0]), seq(sl2[0])): # Run pair filters on sequences from the pair TODO: some of these filters get run additional times
-					primer_pairs_by_contig[region].append((sl1, sl2)) # add passing ones to the list
-
+				# Run pair filters on sequences from the pair 
+				# TODO: some of these filters get run additional times
+				if pair_filters(seq(sl1[0]), seq(sl2[0])) and pair_read_filters(sl1, sl2): 
+					primer_pairs_by_contig[region].append((sl1, sl2)) 
 	return primer_pairs_by_contig
 

@@ -175,3 +175,20 @@ def pair_filters(km1, km2):
 			at_tail_filter(km2) and
 			xanneal_filter(km1, km2) and
 			delta_tm(km1, km2))
+
+# Tuple-wise filtering cause im dumb
+
+# Check if the read direction is sane- 
+# read should be flanked by primers, therefore 
+# pos of sense+ < pos of sense-
+def read_dir_filter(tup1, tup2):
+	return tup1[1] < tup2[1]
+
+# Check read length, requires tuples of (sequence, locus)
+# Between end of sense+ primer and start of sense- primer
+def read_len_filter(tup1, tup2):
+	readlen = tup2[1] - (tup1[1] + len(tup1[0]))
+	return readlen >= TRANS_MIN_LEN and readlen <= TRANS_MAX_LEN
+	
+def pair_read_filters(tup1, tup2):
+	return read_dir_filter(tup1, tup2) and read_len_filter(tup1, tup2)

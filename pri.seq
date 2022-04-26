@@ -19,7 +19,11 @@ print("Done!")
 fwd_mers, bwd_mers = get_candidate_kmers(fm_idx, threshold)
 primer_pairs = get_primer_pairs(fm_idx, fwd_mers, bwd_mers)
 
-for region in primer_pairs:
-	print(f"Record {region}:")
-	for tup in primer_pairs[region]:
-		print(f"+ sense: {tup[0][0]} {tup[0][1]} | - sense: {tup[1][0]} {tup[1][1]}")
+with open("output.txt", 'w') as f:
+	for region in primer_pairs:
+		f.write(f"Record {region}:\n")
+		for tup in primer_pairs[region]:
+			# ugly code yeah i know
+			f.write(f"Sense+: {tup[0][0]} {tup[0][1]}\nSense-: {tup[1][0]} {tup[1][1]}\nRead length:{tup[1][1]-(tup[0][1] + len(tup[0][0]))}\n")
+		f.write("\n")
+	f.close()
