@@ -55,13 +55,56 @@ class KmerFilter:
 				print(f"Filtering {k}-mers...")
 				self.get_filtered_kmers(record.seq, fm_idx, k=k)
 
-fasta_path = argv[1]
+# kms = KmerFilter(1)
+# kms.get_candidates(fasta, fm_idx)
+# print(kms.filtered_kmers)
+
+
+# Load the FASTA and build FM index
+fasta_path, threshold = (argv[1], int(argv[2]))
 fasta = FASTA(fasta_path, fai=False)
 
 print("Generating FM index...")
-fm_idx = FMIndex(fasta_path)
+fm_idx = FMDIndex(fasta_path)
 print("Done!")
 
-kms = KmerFilter(500)
-kms.get_candidates(fasta, fm_idx)
-print(kms.filtered_kmers)
+fwd_mers = {}
+bwd_mers = {}
+
+contig_count = 0
+for contig in fm_idx.contigs():
+	contig_count += 1
+	print(f"Reading record {contig.name}... ({contig_count} / {len(fm_idx.contigs)+1})")
+
+	print("Sense + strand... ")
+	for n in range(0, len(contig) - PRIMER_MAX_LEN):
+
+		for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
+			seek = fm_idx.sequence(n, n+oligo_len, name=contig.name) 
+			count = fm_idx.count(seek)
+			if count < threshold:
+				break
+				# Ignore kmers w/ freq below threshold
+				# And if it's below the threshold, so will any superstring of it
+			if str(seek) in fwd_mers:
+				continue
+				# Also don't add duplicates, we don't need em
+			if all_filters(seek):
+				fwd_mers[str(seek)] = count
+
+	print("Sense - strand... ")
+	for n in range(len(contig), PRIMER_MAX_LEN, -1):
+
+		for oligo_len in range(PRIMER_MIN_LEN, PRIMER_MAX_LEN+1):
+			seek = revcomp(fm_idx.sequence(n-oligo_len, n, name=contig.name))
+			count = fm_idx.count(seek)
+			if count < threshold:
+				break
+			if str(seek) in bwd_mers:
+				continue
+			if all_filters(seek):
+				bwd_mers[str(seek)] = count
+
+# Debug
+print(fwd_mers)
+print(bwd_mers)
